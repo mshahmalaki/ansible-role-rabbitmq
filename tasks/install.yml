@@ -1,0 +1,52 @@
+---
+- name: Install prerequisite packages.
+  apt:
+    name: "{{ rabbitmq__prerequisite_packages }}"
+    state: present
+    update_cache: yes
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Get RabbitMQ team signing key
+  apt_key:
+    url: https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA
+    keyring: /usr/share/keyrings/com.rabbitmq.team.gpg
+
+- name: Get Erlang signing key
+  apt_key:
+    url: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc
+    keyring: /usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg
+
+- name: Get RabbitMQ signing key
+  apt_key:
+    url: https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey
+    keyring: /usr/share/keyrings/io.packagecloud.rabbitmq.gpg
+
+- name: Add Erlang and RabbitMQ repository
+  template:
+    src: rabbitmq.list.j2
+    dest: /etc/apt/sources.list.d/rabbitmq.list
+
+- name: Install Erlang packages
+  apt:
+    name: "{{ rabbitmq__erlang_packages }}"
+    state: present
+    update_cache: yes
+  register: result
+  until: result is successful
+  retries: 10
+  delay: 30
+
+- name: Install RabbitMQ server packages
+  apt:
+    name: "{{ rabbitmq__packages }}"
+    state: present
+  register: result
+  until: result is successful
+  retries: 10
+  delay: 30
+
+- name: Ensuring that the RabbitMQ service is running
+  service:
+    name: rabbitmq-server
+    state: started
+    enabled: yes

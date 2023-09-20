@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include mshahmalaki.rabbitmq"
+      include_role:
+        name: "mshahmalaki.rabbitmq"
+      tags:
+        # - install
+        - cluster

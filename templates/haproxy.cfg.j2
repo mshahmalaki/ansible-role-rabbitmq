@@ -1,0 +1,41 @@
+global
+  log 127.0.0.1 local0 notice
+  maxconn 10000
+  user haproxy
+  group haproxy
+
+defaults
+  timeout connect 5s
+  timeout client 100s
+  timeout server 100s
+
+listen rabbitmq
+  bind :5673
+  mode tcp
+  balance roundrobin
+{% for host in groups['rabbitmq-cluster'] %}
+  server {{ host }} {{ host }}:5672 check inter 5s rise 2 fall 3
+{% endfor%}
+
+# optional, for proxying management site
+frontend front_rabbitmq_management
+  bind :15673
+  default_backend back_rabbitmq_management
+
+backend back_rabbitmq_management
+  balance source
+{% for host in groups['rabbitmq-cluster'] %}
+  server {{ host }} {{ host }}:15672 check
+{% endfor%}
+
+# optional, for monitoring
+listen stats 
+  bind :9000
+  mode http
+  stats enable
+  stats hide-version
+  stats realm Haproxy\ Statistics
+  stats uri /
+  stats admin if TRUE
+  stats refresh 20s
+  stats auth {{ haproxy__stats_username }}:{{ haproxy__stats_password }}

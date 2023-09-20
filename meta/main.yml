@@ -1,0 +1,25 @@
+galaxy_info:
+  role_name: rabbitmq
+  author: Mohammad Shahmaleki
+  namespace: mshahmalaki
+  description: Ansible role to provision and install RabbitMQ nodes and/or clusters
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+  - name: Ubuntu
+    versions:
+    - focal
+    - jammy
+  - name: Debian
+    versions:
+    - bullseye
+    - bookworm
+  galaxy_tags:
+  - erlang
+  - rabbitmq
+  - clustering
+
+collections:
+  - community.rabbitmq
+
+dependencies: []

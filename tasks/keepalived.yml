@@ -1,0 +1,17 @@
+---
+- name: Install KeepAliveD
+  apt:
+    name: keepalived
+    state: present
+    # update_cache: true
+  register: result
+  until: result is successful
+  retries: 10
+  delay: 30
+
+- name: Generate KeepAliveD config
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    backup: true
+  notify: restart keepalived

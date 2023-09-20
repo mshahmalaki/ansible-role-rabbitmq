@@ -1,0 +1,45 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+ENV['VAGRANT_DEFAULT_PROVIDER'] = 'libvirt'
+
+Vagrant.configure("2") do |config|
+  config.vm.provider "virtualbox" do |vbox|
+    vbox.memory = 2048
+    vbox.cpus = 2
+  end
+  config.vm.provider "libvirt" do |kvm|
+    kvm.memory = 4096
+    kvm.cpus = 2
+  end
+  boxes = [
+    { :name => "rabbitmq01", :box => "generic/ubuntu2204", :hostname => "rabbitmq01"},
+    { :name => "rabbitmq02", :box => "generic/ubuntu2204", :hostname => "rabbitmq02"},
+    { :name => "rabbitmq03", :box => "generic/ubuntu2204", :hostname => "rabbitmq03"}
+  ]
+  boxes.each do |opts|
+    config.vm.define opts[:name] do |config|
+      config.vm.box = opts[:box]
+      config.vm.hostname = opts[:hostname]
+      config.vm.synced_folder ".", "/vagrant", disabled: true
+      if opts[:name] == boxes.last[:name]
+        config.vm.provision "ansible" do |ansible|
+          ansible.playbook = "test.yml"
+          ansible.limit = "all"
+          # ansible.tags="install,plugins,cluster,users,set_policy,haproxy,keepalived"
+          # ansible.tags="plugins,cluster,users,set_policy,haproxy,keepalived"
+          # ansible.tags="cluster,users,set_policy,haproxy,keepalived"
+          # ansible.tags="users,set_policy,haproxy,keepalived"
+          # ansible.tags="set_policy,haproxy,keepalived"
+          # ansible.tags="haproxy,keepalived"
+          ansible.tags="keepalived"
+          ansible.groups = {
+            "rabbitmq-master" => ["rabbitmq01"],
+            "rabbitmq-slaves" => ["rabbitmq0[2:3]"],
+            "rabbitmq-cluster:children" => ["rabbitmq-master", "rabbitmq-slaves"]
+          }
+        end
+      end
+    end
+  end
+end

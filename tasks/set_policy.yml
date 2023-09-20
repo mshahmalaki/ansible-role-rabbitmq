@@ -1,0 +1,12 @@
+---
+- name: Set policy to Mirroring and auto sync all queues
+  community.rabbitmq.rabbitmq_policy:
+    name: ha-fed
+    pattern: .*
+    tags:
+      federation-upstream-set: all
+      ha-mode: all
+      ha-sync-mode: automatic
+    priority: 1
+    apply_to: all
+

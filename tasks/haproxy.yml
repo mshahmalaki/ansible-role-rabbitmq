@@ -1,0 +1,17 @@
+---
+- name: Install HAProxy
+  apt:
+    name: haproxy
+    state: present
+    # update_cache: true
+  register: result
+  until: result is successful
+  retries: 10
+  delay: 30
+
+- name: Generate HAProxy config
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    backup: true
+  notify: restart haproxy

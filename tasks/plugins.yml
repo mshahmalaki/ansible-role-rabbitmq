@@ -1,0 +1,6 @@
+---
+- name: Enable RabbitMQ mangement plugin
+  rabbitmq_plugin:
+    names: "{{ rabbitmq__plugins }}"
+    state: enabled
+  notify: restart rabbitmq-server

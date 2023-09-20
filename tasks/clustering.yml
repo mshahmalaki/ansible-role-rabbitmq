@@ -1,0 +1,67 @@
+---
+- name: Cleanup files
+  command:
+    cmd: rm -rf "{{role_path}}/files/hosts" "{{role_path}}/files/.erlang.cookie"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Stop RabbitMQ
+  command:
+    cmd: rabbitmqctl stop_app
+  register: result
+  until: result is successful
+  retries: 10
+  delay: 30
+
+- name: Reset RabbitMQ
+  command:
+    cmd: rabbitmqctl force_reset
+  register: result
+  until: result is successful
+  retries: 10
+  delay: 30
+
+- name: Generate hosts file
+  lineinfile:
+    path: "{{role_path}}/files/hosts"
+    insertbefore: BOF
+    line: "{{ ansible_default_ipv4.address }} {{ inventory_hostname }} {{ ansible_hostname }} {{ ansible_fqdn }}"
+    state: present
+    create: true
+  delegate_to: localhost
+  become: false
+  loop: "{{ groups['rabbitmq-cluster'] }}"
+
+- name: Add generated hosts to hosts file
+  blockinfile:
+    block: "{{ lookup('ansible.builtin.file', 'hosts') }}"
+    path: /etc/hosts
+
+- name: Fetch .erlang.cookie from master node to management node
+  fetch:
+    src: /var/lib/rabbitmq/.erlang.cookie
+    dest: "{{role_path}}/files/.erlang.cookie"
+    flat: true
+  when: inventory_hostname in groups['rabbitmq-master']
+  run_once: true
+
+- name: Copy .erlang.cookie on other nodes
+  copy:
+    src: .erlang.cookie
+    dest: /var/lib/rabbitmq/.erlang.cookie
+    owner: rabbitmq
+    group: rabbitmq
+    mode: '0400'
+  when: inventory_hostname in groups['rabbitmq-slaves']
+
+- name: Generate RabbitMQ config
+  template:
+    src: rabbitmq.conf.j2
+    dest: /etc/rabbitmq/rabbitmq.conf
+
+- name: Start RabbitMQ
+  command:
+    cmd: rabbitmqctl start_app
+
+

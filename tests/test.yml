@@ -1,0 +1,45 @@
+---
+- hosts: all
+  become: true
+  remote_user: root
+  vars:
+    nameserver01: 178.22.122.100
+    nameserver02: 185.51.200.2
+  pre_tasks:
+    - name: Change nameservers in resolvd.conf
+      template:
+        src: resolved.conf.j2
+        dest: /etc/systemd/resolved.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart resolved
+    - name: Change nameservers in netplan config
+      template:
+        src: 01-netcfg.yaml.j2
+        dest: /etc/netplan/01-netcfg.yaml
+        owner: root
+        group: root
+        mode: '0644'
+      notify: netplan generate
+    - name: Copy ansible facts to a file.
+      copy:
+        content: "{{ ansible_facts | to_nice_yaml }}"
+        dest: "../files/{{ inventory_hostname }}.yml"
+      delegate_to: localhost
+      become: false
+      loop: "{{ groups['rabbitmq-cluster'] }}"
+    - meta: flush_handlers
+  handlers:
+    - name: Restart systemd-resolved service
+      command: systemctl restart systemd-resolved.service
+      listen: restart resolved
+    - name: Generating Netplan Configuration
+      command: netplan generate
+      listen: netplan generate
+      notify: netplan apply
+    - name: Applying Netplan Configuration
+      command: netplan apply
+      listen: netplan apply
+  roles:
+    - role: ../../.

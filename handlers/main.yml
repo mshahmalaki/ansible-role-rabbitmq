@@ -1,0 +1,15 @@
+---
+- name: restart rabbitmq-server
+  service:
+    name: rabbitmq-server
+    state: restarted
+
+- name: restart haproxy
+  service:
+    name: haproxy
+    state: restarted
+
+- name: restart keepalived
+  service:
+    name: keepalived
+    state: restarted

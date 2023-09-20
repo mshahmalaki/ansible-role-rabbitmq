@@ -1,0 +1,7 @@
+loopback_users.guest = false
+listeners.tcp.default = 5672
+
+cluster_formation.peer_discovery_backend = rabbit_peer_discovery_classic_config
+{% for host in groups['rabbitmq-cluster'] %}
+cluster_formation.classic_config.nodes.{{ loop.index }} = rabbit@{{ host }}
+{% endfor%}

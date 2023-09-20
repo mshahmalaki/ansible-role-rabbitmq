@@ -1,0 +1,53 @@
+---
+rabbitmq__prerequisite_packages:
+  - curl
+  - wget
+  - gnupg
+  - apt-transport-https
+
+rabbitmq__erlang_packages:
+  - erlang-base
+  - erlang-asn1
+  - erlang-crypto
+  - erlang-eldap
+  - erlang-ftp
+  - erlang-inets
+  - erlang-mnesia
+  - erlang-os-mon
+  - erlang-parsetools
+  - erlang-public-key
+  - erlang-runtime-tools
+  - erlang-snmp
+  - erlang-ssl
+
+rabbitmq__server_version: 3.12.4-1
+rabbitmq__packages:
+  - rabbitmq-server={{ rabbitmq__server_version }}
+
+# Define admin user to create in order to login to WebUI
+rabbitmq__users:
+  - name: guest
+    password: guest
+    vhost: /
+    configure_priv: ".*"
+    read_priv: ".*"
+    write_priv: ".*"
+    # Define comma separated list of tags to assign to user:
+    # management,policymaker,monitoring,administrator
+    # required for management plugin.
+    # https://www.rabbitmq.com/management.html
+    tags: administrator
+
+# comma separated list of plugins to enable
+rabbitmq__plugins: "rabbitmq_management,rabbitmq_federation"
+
+rabbitmq__ha_config:
+  - policy_pattern: ".*"
+    vhost: apps
+    tags: "ha-mode=all,ha-sync-mode=automatic"
+
+haproxy__stats_username: haproxy
+haproxy__stats_password: haproxy
+
+keepalived__virtual_ip: 192.168.121.10
+keepalived__password: keepalived

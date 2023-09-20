@@ -1,0 +1,32 @@
+# Define the script used to check if haproxy is still working
+vrrp_script chk_haproxy {
+    script "killall -0 haproxy"
+    interval 2
+    weight 2
+}
+
+# Configuation for the virtual interface
+vrrp_instance VI_1 {
+    interface {{ ansible_facts.default_ipv4.interface }}
+{% if inventory_hostname in groups['rabbitmq-master'] %}
+    state MASTER
+    priority 100
+{% else %}
+    state BACKUP
+    priority 100
+{% endif %}
+    virtual_router_id 51
+    smtp_alert
+    authentication {
+        auth_type AH
+        auth_pass {{ keepalived__password }}
+    }
+    # The virtual ip address shared between the two loadbalancers
+    virtual_ipaddress {
+        {{ keepalived__virtual_ip }}
+    }
+    # Use the script above to check if we should fail over
+    track_script {
+        chk_haproxy
+    }
+}
